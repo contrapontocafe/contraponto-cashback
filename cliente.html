@@ -454,7 +454,10 @@
     <div id="tab-scan" class="screen" style="display:none;">
       <p class="section-title">Registrar <span>compra</span></p>
 
-      <div class="card">
+      <!-- PASSO 1: Escanear -->
+      <div class="card" id="step1-card">
+        <p class="card-label" style="margin-bottom:4px;">Passo 1 de 2</p>
+        <p style="font-family:'Cormorant Garamond',serif; font-size:20px; color:var(--brown-mid); margin-bottom:12px;">Escaneie o cupom fiscal</p>
         <p style="font-size:13px; color:var(--text-mid); margin-bottom:16px;">
           Aponte a câmera para o <strong>QR Code do cupom fiscal (NFC-e)</strong> da sua compra no Contraponto Café.
         </p>
@@ -481,7 +484,36 @@
         <div class="form-group manual-url">
           <input type="text" id="manual-url" placeholder="Cole aqui a URL do cupom fiscal...">
         </div>
-        <button class="btn btn-secondary" onclick="processManualURL()">Registrar pelo link</button>
+        <button class="btn btn-secondary" onclick="processManualURL()">Continuar com o link</button>
+      </div>
+
+      <!-- PASSO 2: Digitar valor -->
+      <div class="card" id="step2-card" style="display:none;">
+        <p class="card-label" style="margin-bottom:4px;">Passo 2 de 2</p>
+        <p style="font-family:'Cormorant Garamond',serif; font-size:20px; color:var(--brown-mid); margin-bottom:6px;">Digite o valor da compra</p>
+
+        <div style="background:rgba(45,122,79,0.08); border:1px solid rgba(45,122,79,0.2); border-radius:10px; padding:12px; margin-bottom:16px; display:flex; align-items:center; gap:10px;">
+          <span style="font-size:20px;">✅</span>
+          <div>
+            <p style="font-size:12px; font-weight:700; color:var(--green-safe);">Cupom validado com sucesso!</p>
+            <p style="font-size:11px; color:var(--text-mid);" id="coupon-id-display">Código único registrado.</p>
+          </div>
+        </div>
+
+        <p style="font-size:13px; color:var(--text-mid); margin-bottom:14px;">
+          Informe o <strong>valor total</strong> que aparece no seu cupom fiscal:
+        </p>
+        <div class="form-group">
+          <label>Valor total da compra (R$)</label>
+          <input type="number" id="purchase-value" placeholder="Ex: 45.90" step="0.01" min="0.01"
+            style="font-size:22px; font-family:'Cormorant Garamond',serif; text-align:center;">
+        </div>
+        <button class="btn btn-primary" onclick="confirmPurchaseValue()" style="margin-top:4px;">
+          ✓ Confirmar e receber cashback
+        </button>
+        <button class="btn btn-ghost" onclick="cancelStep2()" style="margin-top:8px;">
+          ← Escanear outro cupom
+        </button>
       </div>
 
       <div class="card" id="scan-result" style="display:none;">
@@ -586,6 +618,9 @@ function loadScript(src) {
   });
 }
 
+// Stores the validated coupon key between step 1 and step 2
+let pendingCouponKey = null;
+
 function processManualURL() {
   const url = document.getElementById('manual-url').value.trim();
   if (!url) { toast('Cole a URL do QR Code do cupom fiscal.', 'error'); return; }
@@ -596,63 +631,92 @@ function processQRCode(rawData) {
   const cpf = DB.getSession();
   if (!cpf) return;
 
-  const couponKey = extractCouponKey(rawData);
-  const resultDiv = document.getElementById('scan-result');
-  const resultContent = document.getElementById('scan-result-content');
-  resultDiv.style.display = 'block';
+  // Extract unique coupon key for anti-fraud
+  // SEFAZ RS format: ...?p=CHAVE|...|...
+  let couponKey = rawData;
+  try {
+    const u = new URL(rawData);
+    const p = u.searchParams.get('p');
+    if (p) {
+      // p param format: chNFe|cIdToken|cHashQRCode|... — first segment is the 44-char key
+      couponKey = p.split('|')[0];
+    } else {
+      couponKey = u.searchParams.get('chNFe') || u.searchParams.get('chnfe') || rawData;
+    }
+  } catch { couponKey = rawData; }
 
   // Anti-fraud: check if coupon already used
   if (DB.isCouponUsed(couponKey)) {
-    resultContent.innerHTML = `
+    document.getElementById('scan-result').style.display = 'block';
+    document.getElementById('scan-result-content').innerHTML = `
       <div style="text-align:center; padding:16px;">
         <div style="font-size:36px;">🚫</div>
         <p style="color:var(--red-alert); font-weight:700; margin:8px 0;">Cupom já utilizado!</p>
-        <p style="font-size:13px; color:var(--text-mid);">Este cupom fiscal já foi registrado no sistema. Cada cupom só pode ser usado uma vez.</p>
+        <p style="font-size:13px; color:var(--text-mid);">Este cupom fiscal já foi registrado. Cada cupom só pode ser usado uma vez.</p>
       </div>`;
-    toast('Cupom já registrado! Possível tentativa de fraude.', 'error');
+    toast('Cupom já registrado!', 'error');
     return;
   }
 
-  const value = parseNFCeQRCode(rawData);
+  // Valid coupon — go to step 2
+  pendingCouponKey = couponKey;
+  const shortKey = couponKey.length > 20 ? couponKey.slice(0,20) + '…' : couponKey;
+  document.getElementById('coupon-id-display').textContent = 'Código: ' + shortKey;
+  document.getElementById('step1-card').style.display = 'none';
+  document.getElementById('step2-card').style.display = 'block';
+  document.getElementById('scan-result').style.display = 'none';
+  document.getElementById('purchase-value').value = '';
+  document.getElementById('purchase-value').focus();
+  stopScanner();
+}
+
+function cancelStep2() {
+  pendingCouponKey = null;
+  document.getElementById('step1-card').style.display = 'block';
+  document.getElementById('step2-card').style.display = 'none';
+  document.getElementById('scan-result').style.display = 'none';
+  document.getElementById('manual-url').value = '';
+}
+
+function confirmPurchaseValue() {
+  const cpf = DB.getSession();
+  if (!cpf || !pendingCouponKey) return;
+
+  const value = parseFloat(document.getElementById('purchase-value').value);
   if (!value || value <= 0) {
-    resultContent.innerHTML = `
-      <div style="text-align:center; padding:16px;">
-        <div style="font-size:36px;">❓</div>
-        <p style="color:var(--brown-warm); font-weight:700; margin:8px 0;">Cupom não reconhecido</p>
-        <p style="font-size:13px; color:var(--text-mid);">Não foi possível extrair o valor da NFC-e. Verifique se o QR Code é de um cupom fiscal válido do Contraponto Café.</p>
-      </div>`;
-    return;
+    toast('Informe o valor total da compra.', 'error'); return;
   }
 
   const cashback = parseFloat((value * 0.05).toFixed(2));
   const now = new Date();
   const expiresAt = addDays(now.toISOString(), 90);
 
-  // Register transaction
   const tx = {
     id: Date.now().toString(),
-    cpf,
-    type: 'credit',
-    amount: cashback,
-    purchaseValue: value,
-    couponKey,
-    date: now.toISOString(),
-    expiresAt,
+    cpf, type: 'credit', amount: cashback,
+    purchaseValue: value, couponKey: pendingCouponKey,
+    date: now.toISOString(), expiresAt,
     desc: 'Compra na loja'
   };
   DB.addTransaction(tx);
-  DB.markCouponUsed(couponKey);
+  DB.markCouponUsed(pendingCouponKey);
+  pendingCouponKey = null;
+
+  document.getElementById('step2-card').style.display = 'none';
+  document.getElementById('step1-card').style.display = 'block';
   document.getElementById('manual-url').value = '';
 
   const newBalance = DB.getActiveBalance(cpf);
-  resultContent.innerHTML = `
+  const resultDiv = document.getElementById('scan-result');
+  resultDiv.style.display = 'block';
+  document.getElementById('scan-result-content').innerHTML = `
     <div style="text-align:center; padding:8px;">
-      <div style="font-size:36px; margin-bottom:8px;">✅</div>
-      <p style="font-family:'Cormorant Garamond',serif; font-size:28px; color:var(--green-safe); font-weight:600;">+${formatCurrency(cashback)}</p>
+      <div style="font-size:40px; margin-bottom:8px;">🎉</div>
+      <p style="font-family:'Cormorant Garamond',serif; font-size:32px; color:var(--green-safe); font-weight:600;">+${formatCurrency(cashback)}</p>
       <p style="color:var(--text-mid); font-size:13px; margin:4px 0;">Cashback de compra de ${formatCurrency(value)}</p>
       <p style="color:var(--brown-light); font-size:11px;">Válido até ${formatDate(expiresAt)}</p>
       <hr style="margin:12px 0;">
-      <p style="font-size:13px; color:var(--text-mid);">Novo saldo: <strong style="color:var(--brown-mid);">${formatCurrency(newBalance)}</strong></p>
+      <p style="font-size:13px; color:var(--text-mid);">Seu saldo agora: <strong style="color:var(--brown-mid);">${formatCurrency(newBalance)}</strong></p>
     </div>`;
 
   toast(`+${formatCurrency(cashback)} de cashback adicionado!`, 'success');
