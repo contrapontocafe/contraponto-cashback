@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contraponto Café — Painel do Lojista</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --brown-dark:  #2C1810;
+    --brown-mid:   #834E26;
+    --brown-warm:  #B45239;
+    --brown-light: #CF9B69;
+    --beige:       #E8D5B7;
+    --cream:       #F5EDE0;
+    --white:       #FDFAF6;
+    --text-dark:   #1A0F08;
+    --text-mid:    #5C3D2E;
+    --green:       #2D7A4F;
+    --red:         #C0392B;
+    --bg:          #1C0F08;
+    --card-bg:     #271409;
+    --card-border: rgba(207,155,105,0.15);
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: var(--cream);
+    min-height: 100vh;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 40% 40% at 5% 5%, rgba(131,78,38,0.2) 0%, transparent 60%),
+      radial-gradient(ellipse 30% 30% at 95% 95%, rgba(207,155,105,0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  /* ── LAYOUT ── */
+  .wrapper { position: relative; z-index: 1; display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+
+  /* ── SIDEBAR ── */
+  sidebar {
+    background: var(--card-bg);
+    border-right: 1px solid var(--card-border);
+    padding: 32px 0;
+    display: flex; flex-direction: column;
+    position: sticky; top: 0; height: 100vh;
+  }
+  .sidebar-brand {
+    padding: 0 24px 32px;
+    border-bottom: 1px solid var(--card-border);
+  }
+  .logo-placeholder {
+    width: 52px; height: 52px;
+    border: 1.5px solid rgba(207,155,105,0.4);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--brown-light); font-size: 9px; letter-spacing: 1px;
+    text-transform: uppercase; margin-bottom: 12px;
+  }
+  .sidebar-brand h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px; font-weight: 400; color: var(--cream);
+    letter-spacing: 1px;
+  }
+  .sidebar-brand p { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--brown-light); margin-top: 2px; }
+
+  .sidebar-nav { flex: 1; padding: 24px 12px; display: flex; flex-direction: column; gap: 4px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px; border-radius: 10px;
+    color: rgba(207,155,105,0.7); font-size: 13px; font-weight: 600;
+    letter-spacing: 0.3px; cursor: pointer;
+    background: none; border: none; width: 100%; text-align: left;
+    transition: all .2s;
+  }
+  .nav-item:hover { background: rgba(207,155,105,0.08); color: var(--cream); }
+  .nav-item.active { background: rgba(131,78,38,0.3); color: var(--cream); border-left: 3px solid var(--brown-light); }
+  .nav-item .icon { font-size: 18px; width: 22px; text-align: center; }
+
+  .sidebar-footer { padding: 16px 12px; border-top: 1px solid var(--card-border); }
+  .live-badge {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px; font-size: 11px; color: var(--brown-light);
+  }
+  .live-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--green);
+    box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  /* ── MAIN ── */
+  main { padding: 40px; overflow-y: auto; }
+
+  .page-header { margin-bottom: 32px; }
+  .page-header h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 36px; font-weight: 300; color: var(--cream);
+  }
+  .page-header h1 em { font-style: italic; color: var(--brown-light); }
+  .page-header p { color: rgba(207,155,105,0.6); font-size: 13px; margin-top: 4px; }
+
+  /* ── SCREEN ── */
+  .screen { display: none; animation: fadeIn .3s ease; }
+  .screen.active { display: block; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+  /* ── STAT CARDS ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 28px; }
+  .stat-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    padding: 20px; position: relative; overflow: hidden;
+    transition: border-color .2s;
+  }
+  .stat-card:hover { border-color: rgba(207,155,105,0.4); }
+  .stat-card .accent-line {
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--brown-mid), var(--brown-light));
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+  .stat-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--brown-light); margin-bottom: 8px; }
+  .stat-value { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 300; color: var(--cream); line-height: 1; }
+  .stat-sub { font-size: 11px; color: rgba(207,155,105,0.5); margin-top: 6px; }
+
+  /* ── TABLE ── */
+  .table-wrap {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: var(--radius); overflow: hidden;
+  }
+  .table-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 24px; border-bottom: 1px solid var(--card-border);
+  }
+  .table-header h3 { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 400; color: var(--cream); }
+  .search-input {
+    background: rgba(255,255,255,0.05); border: 1px solid var(--card-border);
+    border-radius: 8px; padding: 8px 14px; color: var(--cream);
+    font-family: 'Nunito', sans-serif; font-size: 13px; outline: none; width: 200px;
+    transition: border-color .2s;
+  }
+  .search-input:focus { border-color: var(--brown-light); }
+  .search-input::placeholder { color: rgba(207,155,105,0.4); }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    padding: 12px 20px; text-align: left;
+    font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--brown-light); border-bottom: 1px solid var(--card-border);
+    font-weight: 700;
+  }
+  tbody tr { transition: background .15s; }
+  tbody tr:hover { background: rgba(207,155,105,0.04); }
+  tbody td { padding: 14px 20px; font-size: 13px; color: rgba(245,237,224,0.85); border-bottom: 1px solid rgba(207,155,105,0.06); }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 99px;
+    font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+  }
+  .badge-green { background: rgba(45,122,79,0.2); color: #5CC98B; border: 1px solid rgba(45,122,79,0.3); }
+  .badge-gold { background: rgba(207,155,105,0.15); color: var(--brown-light); border: 1px solid rgba(207,155,105,0.25); }
+  .badge-red { background: rgba(192,57,43,0.2); color: #E74C3C; border: 1px solid rgba(192,57,43,0.3); }
+  .badge-gray { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.1); }
+
+  /* ── AMOUNT COLORS ── */
+  .amt-green { color: #5CC98B; font-weight: 700; }
+  .amt-red { color: #E74C3C; font-weight: 700; }
+
+  /* ── REDEEM PANEL ── */
+  .redeem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+  .redeem-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 24px; }
+  .redeem-card h3 { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 400; margin-bottom: 16px; color: var(--cream); }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--brown-light); margin-bottom: 6px; font-weight: 700; }
+  .form-group input { width: 100%; padding: 12px 14px; background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); border-radius: 10px; color: var(--cream); font-family: 'Nunito', sans-serif; font-size: 14px; outline: none; transition: border-color .2s; }
+  .form-group input:focus { border-color: var(--brown-light); }
+  .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: all .2s; }
+  .btn-primary { background: linear-gradient(135deg, var(--brown-mid), var(--brown-warm)); color: var(--white); }
+  .btn-primary:hover { opacity: .9; transform: translateY(-1px); }
+  .btn-danger { background: rgba(192,57,43,0.2); color: #E74C3C; border: 1px solid rgba(192,57,43,0.3); }
+  .btn-danger:hover { background: rgba(192,57,43,0.3); }
+  .result-box { padding: 16px; border-radius: 10px; margin-top: 14px; font-size: 14px; display: none; }
+  .result-box.success { background: rgba(45,122,79,0.15); border: 1px solid rgba(45,122,79,0.3); color: #5CC98B; }
+  .result-box.error { background: rgba(192,57,43,0.15); border: 1px solid rgba(192,57,43,0.3); color: #E74C3C; }
+  .result-box.info { background: rgba(207,155,105,0.1); border: 1px solid rgba(207,155,105,0.2); color: var(--brown-light); }
+
+  /* ── TOAST ── */
+  .toast { position: fixed; bottom: 24px; right: 24px; transform: translateY(80px); background: var(--brown-mid); color: var(--cream); padding: 14px 22px; border-radius: 10px; font-size: 13px; font-weight: 600; box-shadow: 0 8px 32px rgba(0,0,0,0.4); z-index: 999; transition: transform .3s cubic-bezier(.22,.68,0,1.2); max-width: 320px; }
+  .toast.show { transform: translateY(0); }
+  .toast.success { background: var(--green); }
+  .toast.error { background: var(--red); }
+
+  /* ── EMPTY ── */
+  .empty { text-align: center; padding: 48px; color: rgba(207,155,105,0.4); }
+  .empty .icon { font-size: 40px; margin-bottom: 12px; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(207,155,105,0.2); border-radius: 99px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .wrapper { grid-template-columns: 1fr; }
+    sidebar { height: auto; position: static; flex-direction: row; padding: 16px; flex-wrap: wrap; }
+    .sidebar-brand { padding: 0 16px 0 0; border: none; }
+    .sidebar-nav { flex-direction: row; padding: 0; flex: none; }
+    main { padding: 20px; }
+    .stats-grid { grid-template-columns: repeat(2,1fr); }
+    .redeem-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── LOGIN SCREEN ── */
+  .login-screen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    position: relative; z-index: 1;
+  }
+  .login-card {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 20px; padding: 40px; width: 360px; text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .login-card h2 { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 300; margin-bottom: 6px; }
+  .login-card p { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--brown-light); margin-bottom: 28px; }
+</style>
+</head>
+<body>
+
+<!-- ========== ADMIN LOGIN ========== -->
+<div id="admin-login" class="login-screen">
+  <div class="login-card">
+    <div class="logo-placeholder" style="margin:0 auto 16px; width:60px; height:60px; border:1.5px solid rgba(207,155,105,0.4); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--brown-light); font-size:9px; letter-spacing:1px; text-transform:uppercase;">logo</div>
+    <h2>Painel do Lojista</h2>
+    <p>Contraponto Café</p>
+    <div class="form-group" style="text-align:left;">
+      <label>Senha de acesso</label>
+      <input type="password" id="admin-pass" placeholder="••••••••" style="width:100%; padding:14px; background:rgba(255,255,255,0.05); border:1px solid rgba(207,155,105,0.15); border-radius:10px; color:var(--cream); font-family:'Nunito',sans-serif; font-size:15px; outline:none;">
+    </div>
+    <button class="btn btn-primary" onclick="adminLogin()" style="margin-top:8px;">Entrar no painel</button>
+    <p style="font-size:11px; color:rgba(207,155,105,0.4); margin-top:16px; text-transform:none; letter-spacing:0;">Senha padrão: <strong style="color:var(--brown-light);">contraponto2024</strong></p>
+    <p style="font-size:10px; color:rgba(207,155,105,0.3); margin-top:4px; text-transform:none; letter-spacing:0;">Altere no arquivo index.html após instalar</p>
+  </div>
+</div>
+
+<!-- ========== MAIN APP ========== -->
+<div id="admin-app" class="wrapper" style="display:none;">
+
+  <!-- SIDEBAR -->
+  <sidebar>
+    <div class="sidebar-brand">
+      <div class="logo-placeholder">logo</div>
+      <h2>Contraponto</h2>
+      <p>Painel Lojista</p>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" onclick="goto('dash',this)"><span class="icon">📊</span> Dashboard</button>
+      <button class="nav-item" onclick="goto('clientes',this)"><span class="icon">👤</span> Clientes</button>
+      <button class="nav-item" onclick="goto('transacoes',this)"><span class="icon">📋</span> Transações</button>
+      <button class="nav-item" onclick="goto('resgatar',this)"><span class="icon">🎁</span> Resgatar</button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="live-badge"><div class="live-dot"></div> Dados em tempo real</div>
+      <button onclick="adminLogout()" style="background:none; border:none; color:rgba(207,155,105,0.4); font-size:12px; cursor:pointer; padding:8px 14px; width:100%; text-align:left; margin-top:4px;">← Sair</button>
+    </div>
+  </sidebar>
+
+  <!-- MAIN -->
+  <main>
+
+    <!-- ─── DASHBOARD ─── -->
+    <div id="screen-dash" class="screen active">
+      <div class="page-header">
+        <h1>Dashboard <em>em tempo real</em></h1>
+        <p id="dash-updated">—</p>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="accent-line"></div><div class="stat-label">Clientes cadastrados</div><div class="stat-value" id="stat-clients">0</div><div class="stat-sub">Total geral</div></div>
+        <div class="stat-card"><div class="accent-line" style="background:linear-gradient(90deg,var(--green),#5CC98B)"></div><div class="stat-label">Cashback em carteiras</div><div class="stat-value" id="stat-balance">R$ 0</div><div class="stat-sub">Saldo ativo dos clientes</div></div>
+        <div class="stat-card"><div class="accent-line" style="background:linear-gradient(90deg,var(--brown-warm),#E67E52)"></div><div class="stat-label">Total de compras</div><div class="stat-value" id="stat-purchases">0</div><div class="stat-sub">Cupons registrados</div></div>
+        <div class="stat-card"><div class="accent-line" style="background:linear-gradient(90deg,var(--brown-light),var(--beige))"></div><div class="stat-label">Cashback concedido</div><div class="stat-value" id="stat-total-cashback">R$ 0</div><div class="stat-sub">Total emitido</div></div>
+      </div>
+
+      <!-- Recent activity -->
+      <div class="table-wrap">
+        <div class="table-header">
+          <h3>Últimas movimentações</h3>
+          <span style="font-size:11px; color:rgba(207,155,105,0.5);">Atualização automática</span>
+        </div>
+        <table>
+          <thead><tr>
+            <th>Data</th><th>Cliente</th><th>Tipo</th><th>Compra</th><th>Cashback</th><th>Validade</th>
+          </tr></thead>
+          <tbody id="recent-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── CLIENTES ─── -->
+    <div id="screen-clientes" class="screen">
+      <div class="page-header">
+        <h1>Clientes <em>cadastrados</em></h1>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header">
+          <h3>Base de clientes</h3>
+          <input class="search-input" type="text" id="client-search" placeholder="Buscar por nome ou CPF..." oninput="renderClientes()">
+        </div>
+        <table>
+          <thead><tr>
+            <th>Nome</th><th>CPF</th><th>Celular</th><th>Cadastro</th><th>Saldo</th><th>Total acumulado</th><th>Compras</th>
+          </tr></thead>
+          <tbody id="clients-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── TRANSAÇÕES ─── -->
+    <div id="screen-transacoes" class="screen">
+      <div class="page-header">
+        <h1>Transações <em>detalhadas</em></h1>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header">
+          <h3>Histórico completo</h3>
+          <input class="search-input" type="text" id="tx-search" placeholder="Buscar cliente..." oninput="renderTransacoes()">
+        </div>
+        <table>
+          <thead><tr>
+            <th>Data</th><th>Cliente</th><th>Tipo</th><th>Valor compra</th><th>Cashback</th><th>Status</th>
+          </tr></thead>
+          <tbody id="tx-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── RESGATAR ─── -->
+    <div id="screen-resgatar" class="screen">
+      <div class="page-header">
+        <h1>Resgatar <em>cashback</em></h1>
+        <p>Consulte o saldo do cliente e aplique o desconto na compra</p>
+      </div>
+
+      <div class="redeem-grid">
+        <!-- Consultar -->
+        <div class="redeem-card">
+          <h3>1. Consultar saldo</h3>
+          <div class="form-group">
+            <label>CPF do cliente</label>
+            <input type="tel" id="redeem-cpf" placeholder="000.000.000-00" maxlength="14" oninput="maskCPFInput(this)">
+          </div>
+          <button class="btn btn-primary" onclick="consultarSaldo()">Consultar saldo</button>
+          <div id="redeem-result" class="result-box"></div>
+        </div>
+
+        <!-- Aplicar resgate -->
+        <div class="redeem-card" id="redeem-apply-card" style="opacity:.4; pointer-events:none;">
+          <h3>2. Aplicar resgate</h3>
+          <div id="client-info-box" style="padding:12px; background:rgba(207,155,105,0.08); border-radius:10px; margin-bottom:14px; font-size:13px; color:var(--brown-light);">Consulte um cliente primeiro.</div>
+          <div class="form-group">
+            <label>Valor a resgatar (R$)</label>
+            <input type="number" id="redeem-amount" placeholder="Ex: 20.00" step="0.01" min="0.01">
+          </div>
+          <button class="btn btn-primary" onclick="aplicarResgate()">✓ Confirmar resgate</button>
+          <div id="apply-result" class="result-box"></div>
+        </div>
+      </div>
+
+      <!-- Resgate log -->
+      <div class="table-wrap">
+        <div class="table-header"><h3>Histórico de resgates</h3></div>
+        <table>
+          <thead><tr><th>Data</th><th>Cliente</th><th>Valor resgatado</th><th>Operador</th></tr></thead>
+          <tbody id="redeem-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div><!-- /wrapper -->
+
+<div class="toast" id="toast"></div>
+
+<script src="db.js"></script>
+<script>
+const ADMIN_PASSWORD = 'contraponto2024';
+let currentRedeemCPF = null;
+
+// ── ADMIN AUTH ────────────────────────────────────────────────────────────────
+function adminLogin() {
+  const pass = document.getElementById('admin-pass').value;
+  if (pass === ADMIN_PASSWORD) {
+    document.getElementById('admin-login').style.display = 'none';
+    document.getElementById('admin-app').style.display = 'grid';
+    refreshAll();
+    setInterval(refreshAll, 10000); // auto-refresh every 10s
+  } else {
+    toast('Senha incorreta.', 'error');
+  }
+}
+document.getElementById('admin-pass').addEventListener('keydown', e => { if(e.key==='Enter') adminLogin(); });
+
+function adminLogout() {
+  document.getElementById('admin-app').style.display = 'none';
+  document.getElementById('admin-login').style.display = 'flex';
+  document.getElementById('admin-pass').value = '';
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+function goto(id, btn) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.screen').forEach(s => { s.style.display='none'; s.classList.remove('active'); });
+  const sc = document.getElementById('screen-' + id);
+  sc.style.display = 'block'; sc.classList.add('active');
+  if (id === 'clientes') renderClientes();
+  if (id === 'transacoes') renderTransacoes();
+  if (id === 'resgatar') renderRedeemLog();
+  if (id === 'dash') renderDash();
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function renderDash() {
+  const clients = DB.getClients();
+  const txs = DB.getTransactions();
+  const now = Date.now();
+
+  const totalBalance = clients.reduce((s, c) => s + DB.getActiveBalance(c.cpf), 0);
+  const totalCashback = txs.filter(t=>t.type==='credit').reduce((s,t) => s+t.amount, 0);
+  const purchases = txs.filter(t=>t.type==='credit').length;
+
+  document.getElementById('stat-clients').textContent = clients.length;
+  document.getElementById('stat-balance').textContent = formatCurrency(totalBalance);
+  document.getElementById('stat-purchases').textContent = purchases;
+  document.getElementById('stat-total-cashback').textContent = formatCurrency(totalCashback);
+  document.getElementById('dash-updated').textContent = 'Atualizado em ' + new Date().toLocaleTimeString('pt-BR');
+
+  // Recent 15 transactions
+  const recent = [...txs].slice(0, 15);
+  const tbody = document.getElementById('recent-tbody');
+  if (!recent.length) { tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="icon">☕</div><p>Nenhuma movimentação ainda.</p></div></td></tr>`; return; }
+  tbody.innerHTML = recent.map(tx => {
+    const client = DB.findClientByCPF(tx.cpf);
+    const name = client ? client.name : tx.cpf;
+    const expired = tx.expiresAt && new Date(tx.expiresAt).getTime() < now;
+    const typeBadge = {
+      credit: '<span class="badge badge-green">Cashback</span>',
+      welcome: '<span class="badge badge-gold">Bônus</span>',
+      debit: '<span class="badge badge-red">Resgate</span>',
+      redeem: '<span class="badge badge-red">Resgate</span>',
+    }[tx.type] || '<span class="badge badge-gray">—</span>';
+    return `<tr>
+      <td>${formatDate(tx.date)}</td>
+      <td><strong>${name.split(' ').slice(0,2).join(' ')}</strong></td>
+      <td>${typeBadge}</td>
+      <td>${tx.purchaseValue ? formatCurrency(tx.purchaseValue) : '—'}</td>
+      <td class="${(tx.type==='credit'||tx.type==='welcome') ? 'amt-green' : 'amt-red'}">
+        ${(tx.type==='credit'||tx.type==='welcome') ? '+' : '-'}${formatCurrency(tx.amount)}
+      </td>
+      <td>${tx.expiresAt ? (expired ? '<span class="badge badge-red">Expirado</span>' : formatDate(tx.expiresAt)) : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── CLIENTS ───────────────────────────────────────────────────────────────────
+function renderClientes() {
+  const q = (document.getElementById('client-search').value || '').toLowerCase();
+  let clients = DB.getClients();
+  if (q) clients = clients.filter(c => c.name.toLowerCase().includes(q) || c.cpf.includes(q.replace(/\D/g,'')));
+  const tbody = document.getElementById('clients-tbody');
+  if (!clients.length) { tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="icon">👤</div><p>Nenhum cliente encontrado.</p></div></td></tr>`; return; }
+  tbody.innerHTML = clients.map(c => {
+    const bal = DB.getActiveBalance(c.cpf);
+    const total = DB.getTotalEarned(c.cpf);
+    const purchases = DB.getClientTransactions(c.cpf).filter(t=>t.type==='credit').length;
+    const balClass = bal >= 20 ? 'amt-green' : '';
+    return `<tr>
+      <td><strong>${c.name}</strong></td>
+      <td style="font-family:monospace; font-size:12px;">${formatCPF(c.cpf)}</td>
+      <td>${c.phone}</td>
+      <td>${formatDate(c.joinedAt)}</td>
+      <td class="${balClass}">${formatCurrency(bal)} ${bal >= 20 ? '🎁' : ''}</td>
+      <td>${formatCurrency(total)}</td>
+      <td>${purchases}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── TRANSACTIONS ──────────────────────────────────────────────────────────────
+function renderTransacoes() {
+  const q = (document.getElementById('tx-search').value || '').toLowerCase();
+  let txs = DB.getTransactions();
+  if (q) {
+    txs = txs.filter(tx => {
+      const c = DB.findClientByCPF(tx.cpf);
+      return c && (c.name.toLowerCase().includes(q) || c.cpf.includes(q.replace(/\D/g,'')));
+    });
+  }
+  const now = Date.now();
+  const tbody = document.getElementById('tx-tbody');
+  if (!txs.length) { tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="icon">📋</div><p>Nenhuma transação encontrada.</p></div></td></tr>`; return; }
+  tbody.innerHTML = txs.map(tx => {
+    const c = DB.findClientByCPF(tx.cpf);
+    const name = c ? c.name.split(' ').slice(0,2).join(' ') : tx.cpf;
+    const expired = tx.expiresAt && new Date(tx.expiresAt).getTime() < now;
+    const statusBadge = expired ? '<span class="badge badge-gray">Expirado</span>' :
+      (tx.type==='credit' ? '<span class="badge badge-green">Ativo</span>' :
+       tx.type==='welcome' ? '<span class="badge badge-gold">Bônus</span>' :
+       '<span class="badge badge-red">Resgatado</span>');
+    const typeLabel = {credit:'Cashback', welcome:'Bônus Boas-Vindas', debit:'Resgate', redeem:'Resgate'}[tx.type] || tx.type;
+    return `<tr>
+      <td>${formatDate(tx.date)}</td>
+      <td>${name}</td>
+      <td>${typeLabel}</td>
+      <td>${tx.purchaseValue ? formatCurrency(tx.purchaseValue) : '—'}</td>
+      <td class="${(tx.type==='credit'||tx.type==='welcome')?'amt-green':'amt-red'}">
+        ${(tx.type==='credit'||tx.type==='welcome')?'+':'-'}${formatCurrency(tx.amount)}
+      </td>
+      <td>${statusBadge}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── REDEEM ────────────────────────────────────────────────────────────────────
+function maskCPFInput(el) {
+  let v = el.value.replace(/\D/g,'');
+  if (v.length > 11) v = v.slice(0,11);
+  el.value = v.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');
+}
+
+function consultarSaldo() {
+  const cpfRaw = rawCPF(document.getElementById('redeem-cpf').value);
+  const result = document.getElementById('redeem-result');
+  const applyCard = document.getElementById('redeem-apply-card');
+  const infoBox = document.getElementById('client-info-box');
+
+  if (!validateCPF(cpfRaw)) {
+    result.className = 'result-box error'; result.style.display = 'block';
+    result.textContent = 'CPF inválido.'; currentRedeemCPF = null;
+    applyCard.style.opacity = '.4'; applyCard.style.pointerEvents = 'none';
+    return;
+  }
+  const client = DB.findClientByCPF(cpfRaw);
+  if (!client) {
+    result.className = 'result-box error'; result.style.display = 'block';
+    result.textContent = 'Cliente não encontrado.'; currentRedeemCPF = null;
+    applyCard.style.opacity = '.4'; applyCard.style.pointerEvents = 'none';
+    return;
+  }
+  const balance = DB.getActiveBalance(cpfRaw);
+  const MIN = 20;
+  currentRedeemCPF = cpfRaw;
+
+  result.className = 'result-box info'; result.style.display = 'block';
+  result.innerHTML = `<strong>${client.name}</strong><br>Saldo disponível: <strong style="color:#5CC98B;">${formatCurrency(balance)}</strong>${balance < MIN ? `<br><span style="font-size:12px; opacity:.7;">Mínimo para resgate: ${formatCurrency(MIN)}</span>` : ''}`;
+
+  if (balance >= MIN) {
+    applyCard.style.opacity = '1'; applyCard.style.pointerEvents = '';
+    infoBox.innerHTML = `<strong>${client.name}</strong><br>Saldo: <strong style="color:#5CC98B;">${formatCurrency(balance)}</strong>`;
+    document.getElementById('redeem-amount').value = balance.toFixed(2);
+    document.getElementById('redeem-amount').max = balance;
+  } else {
+    applyCard.style.opacity = '.4'; applyCard.style.pointerEvents = 'none';
+    infoBox.innerHTML = `Saldo insuficiente para resgate.<br>Mínimo: ${formatCurrency(MIN)}`;
+  }
+}
+
+function aplicarResgate() {
+  if (!currentRedeemCPF) return;
+  const amount = parseFloat(document.getElementById('redeem-amount').value);
+  const balance = DB.getActiveBalance(currentRedeemCPF);
+  const result = document.getElementById('apply-result');
+  const client = DB.findClientByCPF(currentRedeemCPF);
+
+  if (!amount || amount <= 0) {
+    result.className='result-box error'; result.style.display='block';
+    result.textContent='Informe um valor válido.'; return;
+  }
+  if (amount > balance) {
+    result.className='result-box error'; result.style.display='block';
+    result.textContent=`Saldo insuficiente. Disponível: ${formatCurrency(balance)}`; return;
+  }
+
+  const tx = {
+    id: Date.now().toString(),
+    cpf: currentRedeemCPF, type: 'redeem', amount,
+    date: new Date().toISOString(), desc: 'Resgate de cashback'
+  };
+  DB.addTransaction(tx);
+
+  result.className='result-box success'; result.style.display='block';
+  result.innerHTML = `✓ Resgate de <strong>${formatCurrency(amount)}</strong> aplicado com sucesso para <strong>${client.name}</strong>!`;
+  toast(`Resgate de ${formatCurrency(amount)} confirmado!`, 'success');
+  document.getElementById('redeem-apply-card').style.opacity='.4';
+  document.getElementById('redeem-apply-card').style.pointerEvents='none';
+  currentRedeemCPF = null;
+  renderRedeemLog();
+}
+
+function renderRedeemLog() {
+  const txs = DB.getTransactions().filter(t => t.type==='redeem');
+  const tbody = document.getElementById('redeem-tbody');
+  if (!txs.length) {
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty"><div class="icon">🎁</div><p>Nenhum resgate ainda.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = txs.map(tx => {
+    const c = DB.findClientByCPF(tx.cpf);
+    return `<tr>
+      <td>${formatDate(tx.date)}</td>
+      <td>${c ? c.name : tx.cpf}</td>
+      <td class="amt-red">-${formatCurrency(tx.amount)}</td>
+      <td>Atendente</td>
+    </tr>`;
+  }).join('');
+}
+
+function refreshAll() { renderDash(); }
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'toast show ' + type;
+  setTimeout(() => el.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>

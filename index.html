@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contraponto Café — Cashback</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --brown-dark:  #4A2210;
+    --brown-mid:   #834E26;
+    --brown-warm:  #B45239;
+    --brown-light: #CF9B69;
+    --beige:       #E8D5B7;
+    --cream:       #F5EDE0;
+    --white:       #FDFAF6;
+    --text-dark:   #2C1810;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--cream);
+    color: var(--text-dark);
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 10%, rgba(207,155,105,0.25) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 80% 90%, rgba(131,78,38,0.15) 0%, transparent 55%);
+    pointer-events: none;
+  }
+
+  .container { position:relative; z-index:1; text-align:center; padding:40px 24px; max-width:500px; width:100%; }
+
+  .logo-box {
+    width: 80px; height: 80px; margin: 0 auto 20px;
+    border: 2px solid rgba(131,78,38,0.3); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--brown-light); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+    background: rgba(255,255,255,0.6);
+  }
+
+  h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 42px; font-weight: 300; color: var(--brown-dark);
+    letter-spacing: 2px; line-height: 1.1; margin-bottom: 6px;
+  }
+  .sub { font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: var(--brown-light); margin-bottom: 48px; }
+
+  .cards { display: flex; flex-direction: column; gap: 14px; }
+
+  .entry-card {
+    display: flex; align-items: center; gap: 20px;
+    background: white; border-radius: 18px;
+    padding: 24px 28px; text-decoration: none; color: inherit;
+    box-shadow: 0 4px 24px rgba(74,34,16,0.1);
+    transition: all .25s; border: 1.5px solid transparent;
+  }
+  .entry-card:hover { transform: translateY(-3px); box-shadow: 0 10px 40px rgba(74,34,16,0.18); border-color: var(--brown-light); }
+  .entry-icon { font-size: 36px; flex-shrink: 0; }
+  .entry-text { text-align: left; }
+  .entry-label { font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--brown-light); margin-bottom: 3px; font-weight: 700; }
+  .entry-title { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 400; color: var(--brown-dark); }
+  .entry-desc { font-size: 12px; color: #8a6a55; margin-top: 3px; }
+  .entry-arrow { margin-left: auto; color: var(--brown-light); font-size: 20px; flex-shrink: 0; }
+
+  .footer { margin-top: 40px; font-size: 11px; color: var(--brown-light); letter-spacing: 1px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="logo-box">logo</div>
+  <h1>Contraponto Café</h1>
+  <p class="sub">Programa de Cashback</p>
+
+  <div class="cards">
+    <a href="cliente.html" class="entry-card">
+      <div class="entry-icon">☕</div>
+      <div class="entry-text">
+        <div class="entry-label">Área do cliente</div>
+        <div class="entry-title">Meu Cashback</div>
+        <div class="entry-desc">Cadastre-se, escaneie cupons e acompanhe seu saldo</div>
+      </div>
+      <div class="entry-arrow">→</div>
+    </a>
+
+    <a href="lojista.html" class="entry-card">
+      <div class="entry-icon">📊</div>
+      <div class="entry-text">
+        <div class="entry-label">Área restrita</div>
+        <div class="entry-title">Painel do Lojista</div>
+        <div class="entry-desc">Dashboard, clientes, transações e resgates</div>
+      </div>
+      <div class="entry-arrow">→</div>
+    </a>
+  </div>
+
+  <p class="footer">© Contraponto Café — Porto Alegre</p>
+</div>
+</body>
+</html>
