@@ -398,6 +398,7 @@
       <button class="nav-tab active" onclick="switchTab('tab-home',this)">Início</button>
       <button class="nav-tab" onclick="switchTab('tab-scan',this)">Escanear</button>
       <button class="nav-tab" onclick="switchTab('tab-history',this)">Extrato</button>
+      <button class="nav-tab" onclick="switchTab('tab-promos',this)">🎁 Ofertas</button>
     </nav>
 
     <!-- TAB: HOME -->
@@ -431,6 +432,17 @@
         <p style="font-size:12px; color:var(--text-mid); margin-top:10px;" id="rescue-msg">
           Acumule mais R$ 20,00 para liberar o resgate.
         </p>
+      </div>
+
+      <!-- Promo banner -->
+      <div onclick="switchTab('tab-promos',document.querySelectorAll('.nav-tab')[3])"
+        style="background:linear-gradient(135deg,var(--brown-dark),var(--brown-warm)); border-radius:16px; padding:16px 20px; margin-bottom:16px; cursor:pointer; display:flex; align-items:center; gap:14px; box-shadow:0 4px 20px rgba(131,78,38,0.3);">
+        <span style="font-size:32px; flex-shrink:0;">🎁</span>
+        <div style="flex:1;">
+          <p style="font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--brown-light); font-weight:700;">Promoção especial</p>
+          <p style="font-family:'Cormorant Garamond',serif; font-size:18px; color:var(--white); line-height:1.2;">Combos com cashback<br>válidos até 16/04</p>
+        </div>
+        <span style="color:var(--brown-light); font-size:20px;">→</span>
       </div>
 
       <!-- Quick scan button -->
@@ -553,6 +565,102 @@
       </div>
     </div>
 
+
+    <!-- TAB: PROMOÇÕES -->
+    <div id="tab-promos" class="screen" style="display:none;">
+      <p class="section-title">Ofertas <span>especiais</span></p>
+
+      <!-- Validade banner -->
+      <div style="background:linear-gradient(135deg,var(--brown-warm),var(--brown-mid)); border-radius:14px; padding:14px 18px; margin-bottom:16px; display:flex; align-items:center; gap:12px;">
+        <span style="font-size:24px;">⏰</span>
+        <div>
+          <p style="font-size:10px; letter-spacing:2px; text-transform:uppercase; color:rgba(245,237,224,0.7); font-weight:700;">Promoção por tempo limitado</p>
+          <p style="font-size:14px; font-weight:700; color:var(--white);">Válida até 16 de abril de 2026</p>
+        </div>
+      </div>
+
+      <!-- COMBO 1: Espresso + Quiche -->
+      <div class="card" style="padding:0; overflow:hidden; margin-bottom:16px;">
+        <div style="position:relative;">
+          <img src="cafe_quiche.jpg" alt="Combo Espresso + Quiche"
+            style="width:100%; height:200px; object-fit:cover; display:block;">
+          <div style="position:absolute; top:12px; left:12px; background:var(--brown-warm); color:white; padding:5px 12px; border-radius:99px; font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase;">
+            🔥 Combo especial
+          </div>
+          <div style="position:absolute; top:12px; right:12px; background:rgba(44,24,16,0.85); color:var(--brown-light); padding:6px 12px; border-radius:99px; font-size:13px; font-weight:700;">
+            Até 16/04
+          </div>
+        </div>
+        <div style="padding:20px;">
+          <p style="font-family:'Cormorant Garamond',serif; font-size:24px; color:var(--brown-dark); font-weight:400; margin-bottom:6px;">Espresso + Quiche</p>
+          <p style="font-size:13px; color:var(--text-mid); margin-bottom:14px; line-height:1.6;">
+            Espresso simples encorpado com nosso quiche artesanal quentinho, servido na frigideira de ferro. A combinação perfeita.
+          </p>
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+            <div>
+              <p style="font-size:11px; color:var(--brown-light); text-decoration:line-through;">De R$ 33,80</p>
+              <p style="font-family:'Cormorant Garamond',serif; font-size:32px; color:var(--brown-mid); font-weight:600; line-height:1;">R$ 30,90</p>
+              <p style="font-size:11px; color:var(--green-safe); font-weight:700;">Você economiza R$ 2,90 + ganha cashback!</p>
+            </div>
+            <div style="text-align:right;">
+              <div style="background:rgba(45,122,79,0.1); border:1px solid rgba(45,122,79,0.25); border-radius:10px; padding:8px 14px;">
+                <p style="font-size:10px; color:var(--green-safe); font-weight:700; text-transform:uppercase; letter-spacing:1px;">Cashback</p>
+                <p style="font-family:'Cormorant Garamond',serif; font-size:22px; color:var(--green-safe); font-weight:600;">+ R$ 1,55</p>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--beige); display:flex; gap:8px; font-size:12px; color:var(--text-mid);">
+            <span>☕ Espresso simples — R$ 8,90</span>
+            <span style="color:var(--beige);">|</span>
+            <span>🥧 Quiche — R$ 24,90</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMBO 2: Espresso + Torta -->
+      <div class="card" style="padding:0; overflow:hidden; margin-bottom:16px;">
+        <div style="position:relative;">
+          <img src="cafe_torta.jpg" alt="Combo Espresso + Torta"
+            style="width:100%; height:200px; object-fit:cover; display:block;">
+          <div style="position:absolute; top:12px; left:12px; background:var(--brown-warm); color:white; padding:5px 12px; border-radius:99px; font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase;">
+            🔥 Combo especial
+          </div>
+          <div style="position:absolute; top:12px; right:12px; background:rgba(44,24,16,0.85); color:var(--brown-light); padding:6px 12px; border-radius:99px; font-size:13px; font-weight:700;">
+            Até 16/04
+          </div>
+        </div>
+        <div style="padding:20px;">
+          <p style="font-family:'Cormorant Garamond',serif; font-size:24px; color:var(--brown-dark); font-weight:400; margin-bottom:6px;">Espresso + Fatia de Torta</p>
+          <p style="font-size:13px; color:var(--text-mid); margin-bottom:14px; line-height:1.6;">
+            Espresso simples com uma generosa fatia de torta artesanal. Doce, cremoso e irresistível — a pausa perfeita no seu dia.
+          </p>
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+            <div>
+              <p style="font-size:11px; color:var(--brown-light); text-decoration:line-through;">De R$ 37,80</p>
+              <p style="font-family:'Cormorant Garamond',serif; font-size:32px; color:var(--brown-mid); font-weight:600; line-height:1;">R$ 34,90</p>
+              <p style="font-size:11px; color:var(--green-safe); font-weight:700;">Você economiza R$ 2,90 + ganha cashback!</p>
+            </div>
+            <div style="text-align:right;">
+              <div style="background:rgba(45,122,79,0.1); border:1px solid rgba(45,122,79,0.25); border-radius:10px; padding:8px 14px;">
+                <p style="font-size:10px; color:var(--green-safe); font-weight:700; text-transform:uppercase; letter-spacing:1px;">Cashback</p>
+                <p style="font-family:'Cormorant Garamond',serif; font-size:22px; color:var(--green-safe); font-weight:600;">+ R$ 1,75</p>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--beige); display:flex; gap:8px; font-size:12px; color:var(--text-mid);">
+            <span>☕ Espresso simples — R$ 8,90</span>
+            <span style="color:var(--beige);">|</span>
+            <span>🎂 Torta — R$ 28,90</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rodapé info -->
+      <div style="text-align:center; padding:8px 0 16px; font-size:12px; color:var(--brown-light);">
+        <p>O cashback é calculado sobre o valor do combo.</p>
+        <p style="margin-top:4px;">Escaneie o cupom fiscal após pagar para acumular! ☕</p>
+      </div>
+    </div>
   </div><!-- /screen-dashboard -->
 </div><!-- /app -->
 
