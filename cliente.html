@@ -501,8 +501,13 @@
         </div>
 
         <p style="font-size:13px; color:var(--text-mid); margin-bottom:14px;">
-          Informe o <strong>valor total</strong> que aparece no seu cupom fiscal:
+          Confira a data e informe o <strong>valor total</strong> do cupom fiscal:
         </p>
+        <div class="form-group">
+          <label>Data da compra</label>
+          <input type="text" id="purchase-date" placeholder="dd/mm/aaaa" maxlength="10"
+            style="font-size:16px; text-align:center; letter-spacing:1px;">
+        </div>
         <div class="form-group">
           <label>Valor total da compra (R$)</label>
           <input type="number" id="purchase-value" placeholder="Ex: 45.90" step="0.01" min="0.01"
@@ -618,8 +623,20 @@ function loadScript(src) {
   });
 }
 
-// Stores the validated coupon key between step 1 and step 2
+// Stores the validated coupon key and date between steps
 let pendingCouponKey = null;
+let pendingCouponDate = null;
+
+// Extract month/year from 44-digit NF-e key: cUF(2) AAMM(4) CNPJ(14)...
+function extractDateFromChave(chave) {
+  if (!chave || chave.length < 6) return null;
+  try {
+    const AAMM = chave.substring(2, 6);
+    const ano = '20' + AAMM.substring(0, 2);
+    const mes = AAMM.substring(2, 4);
+    return { ano, mes };
+  } catch(e) { return null; }
+}
 
 function processManualURL() {
   const url = document.getElementById('manual-url').value.trim();
@@ -631,37 +648,50 @@ function processQRCode(rawData) {
   const cpf = DB.getSession();
   if (!cpf) return;
 
-  // Extract unique coupon key for anti-fraud
-  // SEFAZ RS format: ...?p=CHAVE|...|...
   let couponKey = rawData;
+  let dateInfo = null;
   try {
     const u = new URL(rawData);
     const p = u.searchParams.get('p');
     if (p) {
-      // p param format: chNFe|cIdToken|cHashQRCode|... — first segment is the 44-char key
       couponKey = p.split('|')[0];
+      dateInfo = extractDateFromChave(couponKey);
     } else {
-      couponKey = u.searchParams.get('chNFe') || u.searchParams.get('chnfe') || rawData;
+      const ch = u.searchParams.get('chNFe') || u.searchParams.get('chnfe');
+      if (ch) { couponKey = ch; dateInfo = extractDateFromChave(ch); }
     }
-  } catch { couponKey = rawData; }
+  } catch(e) { couponKey = rawData; }
 
-  // Anti-fraud: check if coupon already used
   if (DB.isCouponUsed(couponKey)) {
     document.getElementById('scan-result').style.display = 'block';
-    document.getElementById('scan-result-content').innerHTML = `
-      <div style="text-align:center; padding:16px;">
-        <div style="font-size:36px;">🚫</div>
-        <p style="color:var(--red-alert); font-weight:700; margin:8px 0;">Cupom já utilizado!</p>
-        <p style="font-size:13px; color:var(--text-mid);">Este cupom fiscal já foi registrado. Cada cupom só pode ser usado uma vez.</p>
-      </div>`;
+    document.getElementById('scan-result-content').innerHTML =
+      '<div style="text-align:center; padding:16px;">' +
+      '<div style="font-size:36px;">&#128683;</div>' +
+      '<p style="color:var(--red-alert); font-weight:700; margin:8px 0;">Cupom j&#225; utilizado!</p>' +
+      '<p style="font-size:13px; color:var(--text-mid);">Este cupom fiscal j&#225; foi registrado. Cada cupom s&#243; pode ser usado uma vez.</p>' +
+      '</div>';
     toast('Cupom já registrado!', 'error');
     return;
   }
 
-  // Valid coupon — go to step 2
   pendingCouponKey = couponKey;
-  const shortKey = couponKey.length > 20 ? couponKey.slice(0,20) + '…' : couponKey;
+  pendingCouponDate = dateInfo;
+
+  const shortKey = couponKey.length > 20 ? couponKey.slice(0,20) + '...' : couponKey;
   document.getElementById('coupon-id-display').textContent = 'Código: ' + shortKey;
+
+  // Pre-fill date from NF-e key
+  const dateInput = document.getElementById('purchase-date');
+  if (dateInfo) {
+    const today = new Date();
+    const sameMonth = today.getFullYear() === parseInt(dateInfo.ano) && (today.getMonth()+1) === parseInt(dateInfo.mes);
+    const day = sameMonth ? String(today.getDate()).padStart(2,'0') : '01';
+    dateInput.value = day + '/' + dateInfo.mes + '/' + dateInfo.ano;
+  } else {
+    const t = new Date();
+    dateInput.value = String(t.getDate()).padStart(2,'0') + '/' + String(t.getMonth()+1).padStart(2,'0') + '/' + t.getFullYear();
+  }
+
   document.getElementById('step1-card').style.display = 'none';
   document.getElementById('step2-card').style.display = 'block';
   document.getElementById('scan-result').style.display = 'none';
@@ -672,6 +702,7 @@ function processQRCode(rawData) {
 
 function cancelStep2() {
   pendingCouponKey = null;
+  pendingCouponDate = null;
   document.getElementById('step1-card').style.display = 'block';
   document.getElementById('step2-card').style.display = 'none';
   document.getElementById('scan-result').style.display = 'none';
@@ -683,43 +714,50 @@ function confirmPurchaseValue() {
   if (!cpf || !pendingCouponKey) return;
 
   const value = parseFloat(document.getElementById('purchase-value').value);
-  if (!value || value <= 0) {
-    toast('Informe o valor total da compra.', 'error'); return;
+  if (!value || value <= 0) { toast('Informe o valor total da compra.', 'error'); return; }
+
+  // Parse date entered by user dd/mm/yyyy
+  const dateStr = document.getElementById('purchase-date').value.trim();
+  let purchaseDate = new Date();
+  if (dateStr && /^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+    const parts = dateStr.split('/');
+    purchaseDate = new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]), 12, 0, 0);
+    if (isNaN(purchaseDate.getTime())) purchaseDate = new Date();
   }
 
   const cashback = parseFloat((value * 0.05).toFixed(2));
-  const now = new Date();
-  const expiresAt = addDays(now.toISOString(), 90);
+  const expiresAt = addDays(purchaseDate.toISOString(), 90);
 
   const tx = {
     id: Date.now().toString(),
     cpf, type: 'credit', amount: cashback,
     purchaseValue: value, couponKey: pendingCouponKey,
-    date: now.toISOString(), expiresAt,
+    date: purchaseDate.toISOString(), expiresAt,
     desc: 'Compra na loja'
   };
   DB.addTransaction(tx);
   DB.markCouponUsed(pendingCouponKey);
   pendingCouponKey = null;
+  pendingCouponDate = null;
 
   document.getElementById('step2-card').style.display = 'none';
   document.getElementById('step1-card').style.display = 'block';
   document.getElementById('manual-url').value = '';
 
   const newBalance = DB.getActiveBalance(cpf);
-  const resultDiv = document.getElementById('scan-result');
-  resultDiv.style.display = 'block';
-  document.getElementById('scan-result-content').innerHTML = `
-    <div style="text-align:center; padding:8px;">
-      <div style="font-size:40px; margin-bottom:8px;">🎉</div>
-      <p style="font-family:'Cormorant Garamond',serif; font-size:32px; color:var(--green-safe); font-weight:600;">+${formatCurrency(cashback)}</p>
-      <p style="color:var(--text-mid); font-size:13px; margin:4px 0;">Cashback de compra de ${formatCurrency(value)}</p>
-      <p style="color:var(--brown-light); font-size:11px;">Válido até ${formatDate(expiresAt)}</p>
-      <hr style="margin:12px 0;">
-      <p style="font-size:13px; color:var(--text-mid);">Seu saldo agora: <strong style="color:var(--brown-mid);">${formatCurrency(newBalance)}</strong></p>
-    </div>`;
+  document.getElementById('scan-result').style.display = 'block';
+  document.getElementById('scan-result-content').innerHTML =
+    '<div style="text-align:center; padding:8px;">' +
+    '<div style="font-size:40px; margin-bottom:8px;">&#127881;</div>' +
+    '<p style="font-family:Cormorant Garamond,serif; font-size:32px; color:var(--green-safe); font-weight:600;">+' + formatCurrency(cashback) + '</p>' +
+    '<p style="color:var(--text-mid); font-size:13px; margin:4px 0;">Cashback de compra de ' + formatCurrency(value) + '</p>' +
+    '<p style="color:var(--text-mid); font-size:12px;">Data da compra: ' + formatDate(purchaseDate.toISOString()) + '</p>' +
+    '<p style="color:var(--brown-light); font-size:11px;">V&#225;lido at&#233; ' + formatDate(expiresAt) + '</p>' +
+    '<hr style="margin:12px 0;">' +
+    '<p style="font-size:13px; color:var(--text-mid);">Seu saldo agora: <strong style="color:var(--brown-mid);">' + formatCurrency(newBalance) + '</strong></p>' +
+    '</div>';
 
-  toast(`+${formatCurrency(cashback)} de cashback adicionado!`, 'success');
+  toast('+' + formatCurrency(cashback) + ' de cashback adicionado!', 'success');
   refreshDashboard();
 }
 
